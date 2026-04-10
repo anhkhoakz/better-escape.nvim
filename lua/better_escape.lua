@@ -99,6 +99,11 @@ local undo_key = {
 local function map_keys()
     for mode, first_keys in pairs(settings.mappings) do
         local map_opts = { expr = true }
+        local prefix_modified =
+            t((undo_key[mode] or "") .. "<cmd>setlocal modified<cr>")
+        local prefix_unmodified = t(
+            (undo_key[mode] or "") .. "<cmd>setlocal nomodified<cr>"
+        )
         for first_key, _ in pairs(first_keys) do
             keymap_set(mode, first_key, function()
                 record_key(first_key)
@@ -110,10 +115,6 @@ local function map_keys()
                 if not mapping then
                     goto continue
                 end
-                local prefix_modified = t((undo_key[mode] or "") .. "<cmd>setlocal modified<cr>")
-                local prefix_unmodified = t(
-                    (undo_key[mode] or "") .. "<cmd>setlocal nomodified<cr>"
-                )
                 local mapped_keys = type(mapping) == "string" and t(mapping) or nil
                 keymap_set(mode, second_key, function()
                     -- If a first_key wasn't recorded, record second_key because it might be a first_key for another sequence.
@@ -132,8 +133,8 @@ local function map_keys()
                         record_key(second_key)
                         return second_key
                     end
-                    local keys =
-                        (bufmodified and prefix_modified or prefix_unmodified)
+                    local keys = bufmodified and prefix_modified
+                        or prefix_unmodified
                     if mapped_keys then
                         keys = keys .. mapped_keys
                     elseif type(mapping) == "function" then
