@@ -118,9 +118,7 @@ local function map_keys()
                 keymap_set(mode, second_key, function()
                     -- If a first_key wasn't recorded, record second_key because it might be a first_key for another sequence.
                     if recorded_key == nil then
-                        if first_keys[second_key] then
-                            record_key(second_key)
-                        end
+                        record_key(second_key)
                         return second_key
                     end
                     -- If a key was recorded, but it isn't the first_key for second_key, record second_key(second_key might be a first_key for another sequence)
@@ -131,9 +129,7 @@ local function map_keys()
                             and first_keys[recorded_key][second_key]
                         )
                     then
-                        if first_keys[second_key] then
-                            record_key(second_key)
-                        end
+                        record_key(second_key)
                         return second_key
                     end
                     local keys =
