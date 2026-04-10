@@ -111,8 +111,9 @@ local function map_keys()
                     goto continue
                 end
                 local prefix_modified = t((undo_key[mode] or "") .. "<cmd>setlocal modified<cr>")
-                local prefix_unmodified =
-                    t((undo_key[mode] or "") .. "<cmd>setlocal nomodified<cr>")
+                local prefix_unmodified = t(
+                    (undo_key[mode] or "") .. "<cmd>setlocal nomodified<cr>"
+                )
                 local mapped_keys = type(mapping) == "string" and t(mapping) or nil
                 keymap_set(mode, second_key, function()
                     -- If a first_key wasn't recorded, record second_key because it might be a first_key for another sequence.
