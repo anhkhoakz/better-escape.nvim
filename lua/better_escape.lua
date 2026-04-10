@@ -1,5 +1,8 @@
 local M = {}
 local uv = vim.uv or vim.loop
+local keymap_set = vim.keymap.set
+local keymap_del = vim.keymap.del
+local nvim_feedkeys = vim.api.nvim_feedkeys
 local t = function(str)
     return vim.api.nvim_replace_termcodes(str, true, true, true)
 end
@@ -45,9 +48,9 @@ local settings = {
 local function unmap_keys()
     for mode, keys in pairs(settings.mappings) do
         for key, subkeys in pairs(keys) do
-            pcall(vim.keymap.del, mode, key)
+            pcall(keymap_del, mode, key)
             for subkey, _ in pairs(subkeys) do
-                pcall(vim.keymap.del, mode, subkey)
+                pcall(keymap_del, mode, subkey)
             end
         end
     end
@@ -97,7 +100,7 @@ local function map_keys()
     for mode, first_keys in pairs(settings.mappings) do
         local map_opts = { expr = true }
         for first_key, _ in pairs(first_keys) do
-            vim.keymap.set(mode, first_key, function()
+            keymap_set(mode, first_key, function()
                 record_key(first_key)
                 return first_key
             end, map_opts)
@@ -107,11 +110,16 @@ local function map_keys()
                 if not mapping then
                     goto continue
                 end
-                vim.keymap.set(mode, second_key, function()
+                local prefix_modified = t((undo_key[mode] or "") .. "<cmd>setlocal modified<cr>")
+                local prefix_unmodified =
+                    t((undo_key[mode] or "") .. "<cmd>setlocal nomodified<cr>")
+                local mapped_keys = type(mapping) == "string" and t(mapping) or nil
+                keymap_set(mode, second_key, function()
                     -- If a first_key wasn't recorded, record second_key because it might be a first_key for another sequence.
-                    -- TODO: Explicitly, check if it's a starting key. I don't think that's necessary right now.
                     if recorded_key == nil then
-                        record_key(second_key)
+                        if first_keys[second_key] then
+                            record_key(second_key)
+                        end
                         return second_key
                     end
                     -- If a key was recorded, but it isn't the first_key for second_key, record second_key(second_key might be a first_key for another sequence)
@@ -122,25 +130,19 @@ local function map_keys()
                             and first_keys[recorded_key][second_key]
                         )
                     then
-                        record_key(second_key)
+                        if first_keys[second_key] then
+                            record_key(second_key)
+                        end
                         return second_key
                     end
-                    local keys = ""
-                    keys = keys
-                        .. t(
-                            (undo_key[mode] or "")
-                                .. (
-                                    ("<cmd>setlocal %smodified<cr>"):format(
-                                        bufmodified and "" or "no"
-                                    )
-                                )
-                        )
-                    if type(mapping) == "string" then
-                        keys = keys .. t(mapping)
+                    local keys =
+                        (bufmodified and prefix_modified or prefix_unmodified)
+                    if mapped_keys then
+                        keys = keys .. mapped_keys
                     elseif type(mapping) == "function" then
                         keys = keys .. t(mapping() or "")
                     end
-                    vim.api.nvim_feedkeys(keys, "in", false)
+                    nvim_feedkeys(keys, "in", false)
                 end, map_opts)
                 ::continue::
             end
